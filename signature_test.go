@@ -46,6 +46,20 @@ func TestParseSignatureInvalid(t *testing.T) {
 	}
 }
 
+func TestParseSignatureMust(t *testing.T) {
+	// A valid signature is returned verbatim.
+	if got := ParseSignatureMust("(iiibiiay)").String(); got != "(iiibiiay)" {
+		t.Errorf("ParseSignatureMust valid = %q, want %q", got, "(iiibiiay)")
+	}
+	// A malformed signature panics.
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("ParseSignatureMust(invalid) did not panic")
+		}
+	}()
+	_ = ParseSignatureMust("z") // unknown type code -> panic
+}
+
 func TestSignatureAccessors(t *testing.T) {
 	var empty Signature
 	if !empty.Empty() {

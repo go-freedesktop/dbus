@@ -41,6 +41,18 @@ func ParseSignature(s string) (Signature, error) {
 	return Signature{str: s}, nil
 }
 
+// ParseSignatureMust is ParseSignature for signatures known to be valid at
+// author time (typically string literals): it returns the Signature and panics
+// if s is malformed. It mirrors the like-named convenience in
+// github.com/godbus/dbus/v5 so consumers can migrate with unchanged call sites.
+func ParseSignatureMust(s string) Signature {
+	sig, err := ParseSignature(s)
+	if err != nil {
+		panic(err)
+	}
+	return sig
+}
+
 // String returns the textual signature.
 func (s Signature) String() string { return s.str }
 
