@@ -120,7 +120,7 @@ func (d *decoder) readStringN(lenSize int) (string, error) {
 // consumed. The decode begins at an 8-aligned offset, matching Marshal.
 func Unmarshal(data []byte, order ByteOrder, sig Signature) ([]interface{}, int, error) {
 	d := &decoder{order: order, data: data}
-	var out []interface{}
+	out := make([]interface{}, 0, countTypes(sig.str))
 	rest := sig.str
 	for len(rest) > 0 {
 		head, tail, err := splitType(rest)
@@ -135,6 +135,22 @@ func Unmarshal(data []byte, order ByteOrder, sig Signature) ([]interface{}, int,
 		rest = tail
 	}
 	return out, d.pos, nil
+}
+
+// countTypes returns the number of complete top-level types in sig, which must
+// already be a validated signature. It lets callers size their result slices
+// up-front instead of regrowing them element by element.
+func countTypes(sig string) int {
+	n := 0
+	for len(sig) > 0 {
+		c, err := validateSingle(sig, 0)
+		if err != nil || c == 0 {
+			return n
+		}
+		sig = sig[c:]
+		n++
+	}
+	return n
 }
 
 // splitType splits sig into its first complete type and the remainder.
@@ -300,7 +316,7 @@ func (d *decoder) decodeStruct(sig string) (interface{}, error) {
 		return nil, err
 	}
 	inner := sig[1 : len(sig)-1] // strip parens
-	var out []interface{}
+	out := make([]interface{}, 0, countTypes(inner))
 	// inner is a substring of an already-validated signature, so each leading
 	// complete type is well-formed; validateSingle cannot fail here.
 	for rest := inner; len(rest) > 0; {

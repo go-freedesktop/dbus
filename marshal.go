@@ -32,10 +32,14 @@ type encoder struct {
 	buf   []byte
 }
 
+// zeroPad supplies alignment padding without allocating; a D-Bus alignment is
+// never more than 8 bytes.
+var zeroPad [8]byte
+
 // align pads buf with zero bytes until its length is a multiple of n.
 func (e *encoder) align(n int) {
-	for len(e.buf)%n != 0 {
-		e.buf = append(e.buf, 0)
+	if r := len(e.buf) % n; r != 0 {
+		e.buf = append(e.buf, zeroPad[:n-r]...)
 	}
 }
 
@@ -43,23 +47,23 @@ func (e *encoder) putByte(x byte) { e.buf = append(e.buf, x) }
 
 func (e *encoder) putUint16(x uint16) {
 	e.align(2)
-	var b [2]byte
-	e.order.PutUint16(b[:], x)
-	e.buf = append(e.buf, b[:]...)
+	n := len(e.buf)
+	e.buf = append(e.buf, 0, 0)
+	e.order.PutUint16(e.buf[n:], x)
 }
 
 func (e *encoder) putUint32(x uint32) {
 	e.align(4)
-	var b [4]byte
-	e.order.PutUint32(b[:], x)
-	e.buf = append(e.buf, b[:]...)
+	n := len(e.buf)
+	e.buf = append(e.buf, 0, 0, 0, 0)
+	e.order.PutUint32(e.buf[n:], x)
 }
 
 func (e *encoder) putUint64(x uint64) {
 	e.align(8)
-	var b [8]byte
-	e.order.PutUint64(b[:], x)
-	e.buf = append(e.buf, b[:]...)
+	n := len(e.buf)
+	e.buf = append(e.buf, 0, 0, 0, 0, 0, 0, 0, 0)
+	e.order.PutUint64(e.buf[n:], x)
 }
 
 // putString writes a length-prefixed, NUL-terminated string. lenSize is 4 for
@@ -106,8 +110,11 @@ func (e *encoder) encode(v reflect.Value) error {
 		return nil
 	}
 
-	// User-supplied Marshaler.
-	if m, ok := v.Interface().(Marshaler); ok {
+	// User-supplied Marshaler. Test the type (which does not allocate) before
+	// calling Interface (which boxes the value onto the heap): the assertion
+	// runs for every encoded value, but almost none implement Marshaler.
+	if t.Implements(marshalerType) {
+		m := v.Interface().(Marshaler)
 		out, _, err := m.MarshalDBus(e.buf, e.order, len(e.buf))
 		if err != nil {
 			return err
@@ -195,6 +202,27 @@ func (e *encoder) encodeArray(v reflect.Value) error {
 	start := len(e.buf)
 	for i := 0; i < v.Len(); i++ {
 		if err := e.encode(v.Index(i)); err != nil {
+			return err
+		}
+	}
+	e.order.PutUint32(e.buf[lenIdx:lenIdx+4], uint32(len(e.buf)-start))
+	return nil
+}
+
+// encodeHeaderFields writes the message header's a(yv) array directly, without
+// routing the fixed (yv) shape through reflection. Every message is framed with
+// this array, so avoiding the per-field reflect.Value boxing matters. The wire
+// output is identical to encoding []headerFieldStruct generically.
+func (e *encoder) encodeHeaderFields(fields []headerFieldStruct) error {
+	e.align(4)
+	lenIdx := len(e.buf)
+	e.buf = append(e.buf, 0, 0, 0, 0)
+	e.align(8) // struct element alignment
+	start := len(e.buf)
+	for i := range fields {
+		e.align(8) // each (yv) struct is 8-aligned
+		e.putByte(fields[i].Code)
+		if err := e.encodeVariant(fields[i].Value); err != nil {
 			return err
 		}
 	}
