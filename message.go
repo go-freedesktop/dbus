@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"reflect"
 )
 
 // protoVersion is the D-Bus major protocol version this implementation speaks.
@@ -150,7 +149,7 @@ func (m *Message) Marshal(order ByteOrder) ([]byte, error) {
 			fields = append(fields, headerFieldStruct{Code: byte(code), Value: v})
 		}
 	}
-	if err := e.encode(reflect.ValueOf(fields)); err != nil {
+	if err := e.encodeHeaderFields(fields); err != nil {
 		return nil, err
 	}
 

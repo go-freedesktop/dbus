@@ -187,6 +187,7 @@ var (
 	unixFDType     = reflect.TypeOf(UnixFD(0))
 	unixFDIdxType  = reflect.TypeOf(UnixFDIndex(0))
 	byteSliceType  = reflect.TypeOf([]byte(nil))
+	marshalerType  = reflect.TypeOf((*Marshaler)(nil)).Elem()
 )
 
 // signatureOfType computes the wire signature string for t.
