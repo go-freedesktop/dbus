@@ -6,6 +6,17 @@
 [![Go](https://img.shields.io/badge/go-1.26.4%2B-00ADD8)](https://go.dev/dl/)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-1a7f37)](#tests--coverage)
 
+> [!WARNING]
+> **DEPRECATED — use [`github.com/godbus/dbus/v5`](https://github.com/godbus/dbus/v5) instead.**
+> This library set out to be a "sovereign replacement" for godbus, but the
+> premise was wrong: **godbus is itself pure Go and CGO-free** (the "cgo-adjacent"
+> framing below was inaccurate), it is a maintained, widely-used reference
+> implementation, and duplicating it added no value. All go-freedesktop and
+> go-widgets consumers — `notifications`, `window` (AT-SPI a11y bridge),
+> `desktop`, and `go-news-reader/reader` — have migrated to `godbus/dbus/v5`,
+> leaving this repository with no users. It is archived read-only; no further
+> changes are planned. New code should depend on `godbus/dbus/v5` directly.
+
 A from-scratch, pure-Go implementation of the **[D-Bus](https://dbus.freedesktop.org/doc/dbus-specification.html)**
 message protocol — the freedesktop IPC bus every Linux desktop service speaks.
 **CGO-free, zero non-standard dependencies**, built directly against the D-Bus
