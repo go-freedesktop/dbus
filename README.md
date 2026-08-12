@@ -14,8 +14,10 @@
 > implementation, and duplicating it added no value. All go-freedesktop and
 > go-widgets consumers — `notifications`, `window` (AT-SPI a11y bridge),
 > `desktop`, and `go-news-reader/reader` — have migrated to `godbus/dbus/v5`,
-> leaving this repository with no users. It is archived read-only; no further
-> changes are planned. New code should depend on `godbus/dbus/v5` directly.
+> leaving this repository with no users. This repository is **deprecated** and no
+> further changes are planned, but it is **kept in place (not archived, not
+> deleted)** so the decision stays reversible and existing references keep
+> resolving. New code should depend on `godbus/dbus/v5` directly.
 
 A from-scratch, pure-Go implementation of the **[D-Bus](https://dbus.freedesktop.org/doc/dbus-specification.html)**
 message protocol — the freedesktop IPC bus every Linux desktop service speaks.
